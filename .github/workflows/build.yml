@@ -1,0 +1,153 @@
+name: Build Black Fire Apps
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Create Black Fire app
+        run: |
+          mkdir -p BlackFire/www
+
+          cat > BlackFire/package.json <<'EOF'
+          {
+            "name": "blackfire-mobile",
+            "version": "1.0.0",
+            "private": true,
+            "dependencies": {
+              "@capacitor/core": "^8.0.0",
+              "@capacitor/android": "^8.0.0"
+            },
+            "devDependencies": {
+              "@capacitor/cli": "^8.0.0"
+            }
+          }
+          EOF
+
+          cat > BlackFire/www/index.html <<'EOF'
+          <!doctype html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Black Fire</title>
+          </head>
+          <body style="margin:0;background:#000">
+            <iframe
+              src="https://blackfire-upp.vercel.app"
+              style="width:100%;height:100vh;border:0"
+              allow="clipboard-read; clipboard-write; fullscreen">
+            </iframe>
+          </body>
+          </html>
+          EOF
+
+          cat > BlackFire/capacitor.config.ts <<'EOF'
+          import type { CapacitorConfig } from '@capacitor/cli';
+
+          const config: CapacitorConfig = {
+            appId: 'com.blackfire.app',
+            appName: 'Black Fire',
+            webDir: 'www'
+          };
+
+          export default config;
+          EOF
+
+          cd BlackFire
+          npm install
+          npx cap add android
+          npx cap sync android
+          cd ..
+
+      - name: Create Black Fire Leader app
+        run: |
+          mkdir -p BlackFireLeader/www
+
+          cat > BlackFireLeader/package.json <<'EOF'
+          {
+            "name": "blackfire-leader-mobile",
+            "version": "1.0.0",
+            "private": true,
+            "dependencies": {
+              "@capacitor/core": "^8.0.0",
+              "@capacitor/android": "^8.0.0"
+            },
+            "devDependencies": {
+              "@capacitor/cli": "^8.0.0"
+            }
+          }
+          EOF
+
+          cat > BlackFireLeader/www/index.html <<'EOF'
+          <!doctype html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Black Fire Leader</title>
+          </head>
+          <body style="margin:0;background:#000">
+            <iframe
+              src="https://leaderblack.vercel.app"
+              style="width:100%;height:100vh;border:0"
+              allow="clipboard-read; clipboard-write; fullscreen">
+            </iframe>
+          </body>
+          </html>
+          EOF
+
+          cat > BlackFireLeader/capacitor.config.ts <<'EOF'
+          import type { CapacitorConfig } from '@capacitor/cli';
+
+          const config: CapacitorConfig = {
+            appId: 'com.blackfire.leader',
+            appName: 'Black Fire Leader',
+            webDir: 'www'
+          };
+
+          export default config;
+          EOF
+
+          cd BlackFireLeader
+          npm install
+          npx cap add android
+          npx cap sync android
+          cd ..
+
+      - name: Build Black Fire APK
+        working-directory: BlackFire/android
+        run: ./gradlew assembleDebug
+
+      - name: Build Leader APK
+        working-directory: BlackFireLeader/android
+        run: ./gradlew assembleDebug
+
+      - name: Upload Black Fire APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Black-Fire-APK
+          path: BlackFire/android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload Leader APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Black-Fire-Leader-APK
+          path: BlackFireLeader/android/app/build/outputs/apk/debug/app-debug.apk
